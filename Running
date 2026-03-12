@@ -1,0 +1,768 @@
+import { useState, useEffect } from "react";
+
+// ─── STRENGTH LIBRARY ───────────────────────────────────────────
+const STRENGTH = {
+  lowerA: {
+    label: "Lower Body A — Power & Stability",
+    duration: "40–45 min",
+    focus: "Quad-dominant, unilateral trail strength",
+    exercises: [
+      { name: "Goblet Squat", sets: "4x10", note: "Slow 3s down, explosive up" },
+      { name: "Walking Lunges", sets: "3x12 each", note: "Add dumbbells when easy" },
+      { name: "Step-Ups (box/bench)", sets: "3x10 each leg", note: "Trail-specific single-leg power" },
+      { name: "Hip Thrusts", sets: "3x15", note: "Full glute engagement at top" },
+      { name: "Calf Raises (single leg)", sets: "3x20 each", note: "Key for descents & ankles" },
+      { name: "Copenhagen Adductor Hold", sets: "3x20s each", note: "Hip/groin injury prevention" },
+    ],
+  },
+  lowerB: {
+    label: "Lower Body B — Posterior Chain",
+    duration: "40–45 min",
+    focus: "Hamstrings, glutes, hip stability",
+    exercises: [
+      { name: "Romanian Deadlift", sets: "4x10", note: "Hinge at hips, slight knee bend" },
+      { name: "Bulgarian Split Squat", sets: "3x10 each", note: "Most important ultra exercise" },
+      { name: "Lateral Band Walks", sets: "3x15 each direction", note: "IT band & hip abductor work" },
+      { name: "Nordic Hamstring Curl", sets: "3x6–8", note: "Hamstring injury prevention" },
+      { name: "Glute Bridges (weighted)", sets: "3x15", note: "Full range, squeeze at top" },
+      { name: "Single-Leg Calf Raise", sets: "3x15 each", note: "Eccentric focus on descent" },
+    ],
+  },
+  upperA: {
+    label: "Upper Body A — Push + Core",
+    duration: "35–40 min",
+    focus: "Chest, shoulders, triceps, anti-rotation core",
+    exercises: [
+      { name: "Push-Ups (weighted vest or slow)", sets: "3x15", note: "Or bench press if available" },
+      { name: "Dumbbell Shoulder Press", sets: "3x12", note: "Upright posture — running posture mimicry" },
+      { name: "Tricep Dips / Skull Crushers", sets: "3x12", note: "Arm drive efficiency" },
+      { name: "Plank to Push-Up", sets: "3x10", note: "Full core stability" },
+      { name: "Dead Bug", sets: "3x10 each side", note: "Opposite arm/leg extend slow" },
+      { name: "Hollow Hold", sets: "3x30s", note: "Lower back protection" },
+    ],
+  },
+  upperB: {
+    label: "Upper Body B — Pull + Rotational Core",
+    duration: "35–40 min",
+    focus: "Back, biceps, scapular stability, rotational power",
+    exercises: [
+      { name: "Pull-Ups / Assisted Pull-Ups", sets: "3x max (aim 6–8)", note: "Back strength for uphills" },
+      { name: "Dumbbell Bent-Over Row", sets: "3x12 each", note: "Strong retraction at top" },
+      { name: "Face Pulls / Band Pull-Aparts", sets: "3x20", note: "Shoulder health non-negotiable" },
+      { name: "Renegade Row", sets: "3x8 each", note: "Anti-rotation + row" },
+      { name: "Russian Twists (weighted)", sets: "3x15 each", note: "Oblique + rotational core" },
+      { name: "Bird Dog", sets: "3x12 each side", note: "Lumbar stability" },
+    ],
+  },
+};
+
+// ─── SPIN LIBRARY ────────────────────────────────────────────────
+const SPIN = {
+  recovery: {
+    label: "Z2 Recovery Spin",
+    duration: "30 min",
+    intensity: "60–65% max HR",
+    color: "#3d8b3d",
+    detail: "Easy seated pedaling, 85–90 rpm, fully conversational. Active recovery — flushes legs without loading joints.",
+    structure: [
+      { segment: "0–5 min", desc: "Warm-up, 80rpm, resistance 2–3" },
+      { segment: "5–25 min", desc: "Steady Z2, 85–90rpm, resistance 3–4, keep HR 130–140" },
+      { segment: "25–30 min", desc: "Easy cool-down, resistance 2" },
+    ],
+  },
+  aerobic: {
+    label: "Aerobic Base Spin",
+    duration: "45 min",
+    intensity: "65–75% max HR",
+    color: "#3d7ab5",
+    detail: "Sustained aerobic effort. Mix seated and standing climbs. Builds cardiac output without leg fatigue.",
+    structure: [
+      { segment: "0–5 min", desc: "Warm-up easy spin" },
+      { segment: "5–15 min", desc: "Steady aerobic, 85rpm, HR 140–150" },
+      { segment: "15–25 min", desc: "Seated climb: resistance 6–7, 75rpm, simulate uphill" },
+      { segment: "25–35 min", desc: "Back to 85rpm, steady HR 145–155" },
+      { segment: "35–45 min", desc: "Cool-down, easy 80rpm" },
+    ],
+  },
+  hiit: {
+    label: "HIIT Spin — Threshold Intervals",
+    duration: "35 min",
+    intensity: "85–95% max HR on efforts",
+    color: "#c44",
+    detail: "High intensity intervals. Builds VO2max + lactate threshold. Do NOT do this the day before a long run.",
+    structure: [
+      { segment: "0–8 min", desc: "Thorough warm-up, build cadence to 95rpm" },
+      { segment: "8–28 min", desc: "5x (2min ALL OUT @95%HR, resistance 7–8 / 2min easy spin recovery)" },
+      { segment: "28–35 min", desc: "Full cool-down, resistance 2, easy legs out" },
+    ],
+  },
+  endurance: {
+    label: "Endurance Spin",
+    duration: "60 min",
+    intensity: "70–75% max HR",
+    color: "#b5a030",
+    detail: "Longer aerobic effort on high-volume weeks. Replaces a medium easy run — saves legs but builds fitness.",
+    structure: [
+      { segment: "0–5 min", desc: "Warm-up easy" },
+      { segment: "5–50 min", desc: "Steady 70–75% HR, vary between 80–95rpm, resistance 4–6, add 3x5min standing climbs" },
+      { segment: "50–60 min", desc: "Cool-down, progressive ease-off" },
+    ],
+  },
+};
+
+// ─── ULTRA WEEKS DATA ────────────────────────────────────────────
+const ultraWeeks = [
+  {
+    week: 1, dates: "Mar 16–22", km: 56, type: "base", keyFocus: "Trail legs intro + first speed",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Speed: 6×400m", icon: "⚡", pace: "4:15–4:30/km", km: 9, detail: "2km WU @6:00–6:30 → 6×400m @4:15–4:30 w/ 90s jog rest → 2km CD @6:00–6:30" },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km Trail", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperA", detail: "Easy 10km on trail @6:00–6:30/km, focus on power hiking steeps. Evening: Upper Body A." },
+      { day: "Fri", type: "rest", label: "Full Rest / Walk", icon: "😴", detail: "Complete rest or 20–30min walk only." },
+      { day: "Sat", type: "run", label: "Long 22km Trail", icon: "🏔️", pace: "6:00–6:45/km", km: 22, detail: "Hilly trail @6:00–6:45/km effort. Walk all >8% grade. Eat every 40min, drink every 20min." },
+      { day: "Sun", type: "run", label: "Easy 7km Recovery", icon: "🐢", pace: "6:15–6:45/km", km: 7, detail: "Dead-legs shakeout. Keep HR under 140. Flat road fine." },
+    ],
+  },
+  {
+    week: 2, dates: "Mar 23–29", km: 59, type: "build", keyFocus: "Back-to-back weekend + tempo intro",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Tempo 10km", icon: "🔥", pace: "4:50–5:05/km", km: 10, detail: "2km WU @6:15 → 6km Tempo @4:50–5:05/km → 2km CD @6:15. Comfortably hard — can speak in short phrases." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperB", detail: "Easy 10km @6:00–6:30/km. Add 6×20s strides at end @4:20/km. Evening: Upper Body B." },
+      { day: "Fri", type: "rest", label: "Full Rest", icon: "😴", detail: "Legs need it ahead of back-to-back." },
+      { day: "Sat", type: "run", label: "Long 24km Trail", icon: "🏔️", pace: "6:00–6:45/km", km: 24, detail: "Hilly trail, effort-based. Pack nutrition. Hike uphills aggressively." },
+      { day: "Sun", type: "run", label: "Easy 9km Back-to-Back", icon: "🔁", pace: "6:15–6:45/km", km: 9, detail: "Key session. Run on tired legs — this is exactly what the ultra demands." },
+    ],
+  },
+  {
+    week: 3, dates: "Mar 30–Apr 5", km: 64, type: "build", keyFocus: "Elevation + hill speed",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Hill Reps: 10×200m", icon: "⚡", pace: "4:30–4:45/km effort uphill", km: 10, detail: "2km WU flat → 10×200m hill @hard effort (4:30–4:45 flat eq.) w/ walk/jog back down → 2km CD @6:15" },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperA", detail: "Easy trail or road @6:00–6:30/km. Include rolling terrain. Evening: Upper Body A." },
+      { day: "Fri", type: "rest", label: "Rest / Mobility", icon: "😴", detail: "10–15min foam roll + hip mobility. No running." },
+      { day: "Sat", type: "run", label: "Long 26km Trail", icon: "🏔️", pace: "6:00–6:45/km", km: 26, detail: "Target 600–800m elevation gain. Walk all steep sections. Fuel every 35–40min." },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🐢", pace: "6:15–6:45/km", km: 8, detail: "Very easy recovery jog. Flat preferred." },
+    ],
+  },
+  {
+    week: 4, dates: "Apr 6–12", km: 44, type: "recovery", keyFocus: "🔄 Full recovery — absorb Week 1–3 adaptations",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Reduce weight by 20%, same movements" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km / strides @4:20", km: 8, detail: "Easy 8km @6:00–6:30 + 4×20s strides @4:20/km at end. Feel good, not hard." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperB", detail: "Easy 10km @6:00–6:30/km. No pressure. Evening: Upper Body B (light)." },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 18km Easy Trail", icon: "🏔️", pace: "6:15–6:45/km", km: 18, detail: "Easy effort, gentle terrain preferred. No elevation goals this week." },
+      { day: "Sun", type: "rest", label: "Rest or Walk", icon: "😴", detail: "Fully optional 20min walk only." },
+    ],
+  },
+  {
+    week: 5, dates: "Apr 13–19", km: 69, type: "build", keyFocus: "Return to volume + speed endurance",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Speed: 8×600m", icon: "⚡", pace: "4:20–4:35/km", km: 12, detail: "2km WU → 8×600m @4:20–4:35/km w/ 90s rest → 2km CD. Harder than 400s — find a rhythm." },
+      { day: "Wed", type: "spin", ref: "hiit", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km Trail", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperA", detail: "Easy trail @6:00–6:30/km with undulating terrain. Evening: Upper Body A." },
+      { day: "Fri", type: "rest", label: "Rest / Light Mobility", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 28km Trail", icon: "🏔️", pace: "5:55–6:30/km", km: 28, detail: "Biggest long run yet. Target 800m+ elevation. Mandatory eating plan on run. Power hike 25%+ grades." },
+      { day: "Sun", type: "run", label: "Easy 10km B2B", icon: "🔁", pace: "6:15–6:45/km", km: 10, detail: "Back-to-back. Important — run on tired legs." },
+    ],
+  },
+  {
+    week: 6, dates: "Apr 20–26", km: 74, type: "peak", keyFocus: "First 30km+ trail + threshold speed",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Threshold 2×4km", icon: "🔥", pace: "4:45–5:00/km", km: 13, detail: "2km WU → 2×4km @4:45–5:00/km (3min rest between) → 2km CD. Sustained discomfort — hold form." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperB", detail: "Easy 12km on trail @6:00–6:30/km. Include strides (6×15s @4:10) at end. Evening: Upper Body B." },
+      { day: "Fri", type: "rest", label: "Rest — Big weekend ahead", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 30km Trail 🏔️", icon: "🏔️", pace: "5:55–6:30/km", km: 30, detail: "MILESTONE — first 30km on trails. 1000m+ elevation if possible. Fuel every 35min. Walk 30% of course. Time on feet > pace." },
+      { day: "Sun", type: "run", label: "Easy 10km + Strides", icon: "🔁", pace: "6:00–6:30/km / strides @4:15", km: 10, detail: "Easy 9km @6:00–6:30 + 5×20s strides @4:15/km. Back-to-back legs simulation." },
+    ],
+  },
+  {
+    week: 7, dates: "Apr 27–May 3", km: 52, type: "recovery", keyFocus: "🔄 Recovery — absorb peak load",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵", note: "Reduce intensity 20%, focus technique" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 8, detail: "Easy 8km @6:00–6:30 + 4×20s strides @4:20/km. Keep it light." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperA", detail: "Easy road 10km. Evening: Upper Body A (light weight)." },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 20km Easy", icon: "🏔️", pace: "6:15–6:45/km", km: 20, detail: "Flat or gentle trail. Zero pressure, enjoy the run." },
+      { day: "Sun", type: "rest", label: "Full Rest / Walk", icon: "😴" },
+    ],
+  },
+  {
+    week: 8, dates: "May 4–10", km: 77, type: "peak", keyFocus: "🔑 Peak week 1 — biggest block",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Speed: 5×1km", icon: "⚡", pace: "4:25–4:40/km", km: 12, detail: "2km WU → 5×1km @4:25–4:40/km w/ 2min rest → 2km CD. These are your confidence-builders." },
+      { day: "Wed", type: "spin", ref: "endurance", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Tempo 14km", icon: "🔥", pace: "4:50–5:05/km mid", km: 14, strengthRef: "upperB", detail: "3km WU @6:15 → 8km Tempo @4:50–5:05/km → 3km CD @6:15. Evening: Upper Body B." },
+      { day: "Fri", type: "rest", label: "Rest — massive weekend ahead", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 32km Trail 🔑", icon: "🏔️", pace: "5:55–6:30/km", km: 32, detail: "LONGEST RUN. 1000–1200m elevation. Treat it like a race: wake early, eat breakfast 2hrs prior, full race kit, fuel every 35min. Walk uphills. Finish strong." },
+      { day: "Sun", type: "run", label: "Easy 12km B2B", icon: "🔁", pace: "6:15–6:45/km", km: 12, detail: "KEY SESSION. Back-to-back. This is the most race-specific training you'll do." },
+    ],
+  },
+  {
+    week: 9, dates: "May 11–17", km: 72, type: "peak", keyFocus: "🔑 Peak week 2 — back-to-back simulation",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Hill Reps: 12×200m", icon: "⚡", pace: "4:25–4:40 flat equiv.", km: 11, detail: "2km WU → 12×200m hill @hard effort w/ jog down → 2km CD. Go by effort not watch on hills." },
+      { day: "Wed", type: "spin", ref: "hiit", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Steady 16km", icon: "🌿", pace: "5:20–5:40/km", km: 16, strengthRef: "upperA", detail: "Steady aerobic 16km @5:20–5:40/km. Not easy, not hard. Sustained aerobic. Evening: Upper Body A." },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 26km Trail", icon: "🏔️", pace: "5:55–6:30/km", km: 26, detail: "Hilly trail — imagine this is km 0–26 of your race. Eat, drink, hike uphills." },
+      { day: "Sun", type: "run", label: "Back-to-Back 20km 🔑", icon: "🔁", pace: "6:15–6:45/km", km: 20, detail: "The most important run of the whole block. Run 20km on DEAD LEGS. This mental + physical experience is your ultra insurance policy." },
+    ],
+  },
+  {
+    week: 10, dates: "May 18–24", km: 57, type: "taper", keyFocus: "📉 Taper begins — protect the work",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Drop volume 30%, keep intensity" },
+      { day: "Tue", type: "run", label: "Fartlek 10km", icon: "⚡", pace: "Mix: 5:00–6:30/km", km: 10, detail: "Easy 10km with 6×1min surges @4:40–4:55/km. Unstructured, run by feel. Keep legs sharp." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km + Strides", icon: "🌿", pace: "6:00–6:30/km / strides @4:15", km: 12, strengthRef: "upperB", detail: "Easy 12km @6:00–6:30 + 5×20s strides @4:15/km. Stay loose. Evening: Upper Body B (light)." },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 20km Trail", icon: "🏔️", pace: "6:00–6:30/km", km: 20, detail: "Easy trail — no pressure. This is your last real long run. Enjoy it." },
+      { day: "Sun", type: "run", label: "Easy 7km", icon: "🐢", pace: "6:15–6:45/km", km: 7 },
+    ],
+  },
+  {
+    week: 11, dates: "May 25–31", km: 38, type: "taper", keyFocus: "Sharpen, not train — stay loose",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵", note: "Light bodyweight only — no barbells this week" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:15/km / strides @4:15", km: 8, detail: "Easy 8km + 5×20s strides. Legs should feel springy and light." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:15/km", km: 10, strengthRef: "upperA", detail: "Easy 10km. ONLY bodyweight upper body — shoulder health, band work, core. No heavy lifting." },
+      { day: "Fri", type: "rest", label: "Rest / Walk", icon: "😴" },
+      { day: "Sat", type: "run", label: "Easy 10km Trail Shakeout", icon: "🏔️", pace: "6:00–6:30/km", km: 10, detail: "Last trail shakeout. Run your race gear. Test nutrition one more time." },
+      { day: "Sun", type: "rest", label: "Full Rest", icon: "😴", detail: "Sleep. Eat well. Hydrate. Lay out race kit." },
+    ],
+  },
+  {
+    week: 12, dates: "Jun 1–6", km: 16, type: "race", keyFocus: "🏁 Race week — you've done the work",
+    days: [
+      { day: "Mon", type: "run", label: "Easy 5km", icon: "🌿", pace: "6:15–6:30/km", km: 5, detail: "Short easy run. No effort. Keep legs moving." },
+      { day: "Tue", type: "run", label: "Easy 4km + Strides", icon: "🌿", pace: "6:15 / strides @4:10", km: 4, detail: "4km easy + 3×15s strides @4:10/km. Remind your legs what fast feels like." },
+      { day: "Wed", type: "rest", label: "Rest + Race Prep", icon: "😴", detail: "Check kit, charge watch, prep nutrition, plan travel." },
+      { day: "Thu", type: "rest", label: "Rest + Carb Load Begins", icon: "😴", detail: "Increase carbs at every meal. No new foods." },
+      { day: "Fri", type: "run", label: "Shakeout 4km", icon: "🌿", pace: "6:15–6:30/km", km: 4, detail: "3km easy + 2×15s strides. Wake up legs. Done by noon." },
+      { day: "Sat", type: "rest", label: "REST / Travel to Race", icon: "😴", detail: "Sleep 8–9 hours. Eat your normal pre-race dinner. No stress." },
+      { day: "Sun", type: "run", label: "🏆 RACE DAY — 50K TRAIL", icon: "🏆", pace: "Start at 6:30–7:00/km", km: 50, detail: "First 8km: conservative, settle in, don't race. Hike ALL uphills >8% grade. Eat before hunger, drink before thirst. Trust your training." },
+    ],
+  },
+];
+
+// ─── HM WEEKS DATA (condensed) ──────────────────────────────────
+const hmWeeks = [
+  { week: 1, dates: "Jun 8–14", km: 32, type: "recovery", keyFocus: "🔄 Ultra recovery — no ego, no intensity",
+    days: [
+      { day: "Mon", type: "rest", label: "Full Rest", icon: "😴" },
+      { day: "Tue", type: "run", label: "Easy 6km", icon: "🌿", pace: "6:15–6:45/km", km: 6 },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:45/km", km: 8 },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Easy 10km", icon: "🌿", pace: "6:15–6:45/km", km: 10 },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:45/km", km: 8 },
+    ]},
+  { week: 2, dates: "Jun 15–21", km: 38, type: "recovery", keyFocus: "Rebuild easy aerobic base",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵", note: "Light — bodyweight focus" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 8 },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 14km Easy", icon: "🏃", pace: "6:00–6:30/km", km: 14 },
+      { day: "Sun", type: "rest", label: "Rest", icon: "😴" },
+    ]},
+  { week: 3, dates: "Jun 22–28", km: 46, type: "base", keyFocus: "Introduce strides, feel for speed",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Easy 10km + Strides", icon: "🌿", pace: "6:00–6:30 / strides @4:15", km: 10 },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 18km", icon: "🏃", pace: "5:50–6:10/km", km: 18 },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:45/km", km: 8 },
+    ]},
+  { week: 4, dates: "Jun 29–Jul 5", km: 52, type: "base", keyFocus: "First tempo — test fitness",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Tempo: 2×3km", icon: "🔥", pace: "4:30–4:45/km", km: 11, detail: "2km WU → 2×3km @4:30–4:45/km (3min rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 20km", icon: "🏃", pace: "5:45–6:05/km", km: 20 },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:45/km", km: 8 },
+    ]},
+  { week: 5, dates: "Jul 6–12", km: 56, type: "build", keyFocus: "Speed neuromuscular activation",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Intervals: 6×1km", icon: "⚡", pace: "4:25–4:35/km", km: 12, detail: "2km WU → 6×1km @4:25–4:35/km (2min rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "hiit", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:00–6:30/km", km: 10, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 22km", icon: "🏃", pace: "5:40–6:00/km", km: 22 },
+      { day: "Sun", type: "run", label: "Easy 10km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 10 },
+    ]},
+  { week: 6, dates: "Jul 13–19", km: 58, type: "build", keyFocus: "Build HM race feel",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Tempo: 8km", icon: "🔥", pace: "4:40–4:55/km", km: 13, detail: "2km WU → 8km Tempo @4:40–4:55/km → 2km CD. This is your HM race pace zone." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 22km", icon: "🏃", pace: "5:40–6:00/km", km: 22 },
+      { day: "Sun", type: "run", label: "Easy 10km", icon: "🌿", pace: "6:15–6:30/km", km: 10 },
+    ]},
+  { week: 7, dates: "Jul 20–26", km: 44, type: "recovery", keyFocus: "🔄 Recovery — sharpen later",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Light — reduce 20%" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 8 },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:15–6:30/km", km: 10, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 16km Easy", icon: "🏃", pace: "5:50–6:15/km", km: 16 },
+      { day: "Sun", type: "rest", label: "Rest", icon: "😴" },
+    ]},
+  { week: 8, dates: "Jul 27–Aug 2", km: 63, type: "build", keyFocus: "Threshold development",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Intervals: 8×800m", icon: "⚡", pace: "4:20–4:35/km", km: 13, detail: "2km WU → 8×800m @4:20–4:35/km (90s rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "endurance", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Steady 12km", icon: "🌿", pace: "5:20–5:40/km", km: 12, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 22km", icon: "🏃", pace: "5:40–6:00/km", km: 22 },
+      { day: "Sun", type: "run", label: "Easy 12km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 12 },
+    ]},
+  { week: 9, dates: "Aug 3–9", km: 66, type: "peak", keyFocus: "Volume + pace confidence",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Tempo: 12km", icon: "🔥", pace: "4:40–4:50/km", km: 16, detail: "3km WU → 12km @4:40–4:50/km → 2km CD. Getting longer now." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 24km", icon: "🏃", pace: "5:35–5:55/km", km: 24 },
+      { day: "Sun", type: "run", label: "Easy 12km", icon: "🌿", pace: "6:15–6:30/km", km: 12 },
+    ]},
+  { week: 10, dates: "Aug 10–16", km: 68, type: "peak", keyFocus: "🔑 Race pace simulation",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "HM Sim: 14km @Race Pace", icon: "🏁", pace: "4:44/km", km: 18, detail: "3km WU → 14km @4:44/km → 2km CD. This is your rehearsal. Race conditions, race mindset." },
+      { day: "Wed", type: "spin", ref: "hiit", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 25km", icon: "🏃", pace: "5:35–5:55/km", km: 25 },
+      { day: "Sun", type: "run", label: "Easy 12km", icon: "🌿", pace: "6:15–6:30/km", km: 12 },
+    ]},
+  { week: 11, dates: "Aug 17–23", km: 50, type: "recovery", keyFocus: "🔄 Recovery week",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Reduce weight 20%" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 8 },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:15–6:30/km", km: 10, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 18km", icon: "🏃", pace: "5:50–6:10/km", km: 18 },
+      { day: "Sun", type: "rest", label: "Rest", icon: "😴" },
+    ]},
+  { week: 12, dates: "Aug 24–30", km: 68, type: "peak", keyFocus: "Peak speed block",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Intervals: 10×1km", icon: "⚡", pace: "4:30–4:40/km", km: 15, detail: "2km WU → 10×1km @4:30–4:40/km (2min rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "endurance", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 13km + Strides", icon: "🌿", pace: "6:00–6:20/km", km: 13, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 26km", icon: "🏃", pace: "5:35–5:50/km", km: 26 },
+      { day: "Sun", type: "run", label: "Easy 12km", icon: "🌿", pace: "6:15–6:30/km", km: 12 },
+    ]},
+  { week: 13, dates: "Aug 31–Sep 6", km: 70, type: "peak", keyFocus: "Biggest HM-specific week",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵" },
+      { day: "Tue", type: "run", label: "Tempo: 16km", icon: "🔥", pace: "4:44–4:55/km", km: 20, detail: "3km WU → 16km @4:44–4:55/km → 2km CD. Your confidence run." },
+      { day: "Wed", type: "spin", ref: "aerobic", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 26km", icon: "🏃", pace: "5:35–5:50/km", km: 26 },
+      { day: "Sun", type: "run", label: "Easy 12km", icon: "🌿", pace: "6:15–6:30/km", km: 12 },
+    ]},
+  { week: 14, dates: "Sep 7–13", km: 65, type: "peak", keyFocus: "Race rehearsal tempos",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵" },
+      { day: "Tue", type: "run", label: "3×5km Race Pace", icon: "🏁", pace: "4:38–4:44/km", km: 18, detail: "2km WU → 3×5km @4:38–4:44/km (4min rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "hiit", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 12km", icon: "🌿", pace: "6:00–6:30/km", km: 12, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 24km", icon: "🏃", pace: "5:35–5:55/km", km: 24 },
+      { day: "Sun", type: "run", label: "Easy 10km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 10 },
+    ]},
+  { week: 15, dates: "Sep 14–20", km: 50, type: "recovery", keyFocus: "🔄 Final big recovery",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Light, reduce 20%" },
+      { day: "Tue", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:30/km", km: 8 },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km", icon: "🌿", pace: "6:15–6:30/km", km: 10, strengthRef: "upperA" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 18km", icon: "🏃", pace: "5:50–6:10/km", km: 18 },
+      { day: "Sun", type: "rest", label: "Rest", icon: "😴" },
+    ]},
+  { week: 16, dates: "Sep 21–27", km: 58, type: "taper", keyFocus: "📉 Taper starts — stay sharp",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerA", icon: "🦵", note: "Reduce volume 30%, keep speed" },
+      { day: "Tue", type: "run", label: "Intervals: 6×1km", icon: "⚡", pace: "4:35–4:45/km", km: 12, detail: "2km WU → 6×1km @4:35–4:45 (2min rest) → 2km CD." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run+strength", label: "Easy 10km + Strides", icon: "🌿", pace: "6:00–6:20/km", km: 10, strengthRef: "upperB" },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 18km w/ 6km @Pace", icon: "🏁", pace: "5:45 easy / 4:44 race km 7–12", km: 18 },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:30/km", km: 8 },
+    ]},
+  { week: 17, dates: "Sep 28–Oct 4", km: 44, type: "taper", keyFocus: "Feel fast, don't force it",
+    days: [
+      { day: "Mon", type: "strength", category: "lower", ref: "lowerB", icon: "🦵", note: "Bodyweight only from now" },
+      { day: "Tue", type: "run", label: "Tempo: 6km", icon: "🔥", pace: "4:40–4:48/km", km: 10, detail: "2km WU → 6km @4:40–4:48/km → 2km CD." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run", label: "Easy 8km + Strides", icon: "🌿", pace: "6:00–6:20/km", km: 8 },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Long 14km", icon: "🏃", pace: "5:45–6:05/km", km: 14 },
+      { day: "Sun", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:15–6:30/km", km: 8 },
+    ]},
+  { week: 18, dates: "Oct 5–11", km: 34, type: "taper", keyFocus: "Legs fresh, mind ready",
+    days: [
+      { day: "Mon", type: "rest", label: "Rest / Walk", icon: "😴" },
+      { day: "Tue", type: "run", label: "4×1km + Strides", icon: "⚡", pace: "4:35–4:44/km", km: 9, detail: "2km WU → 4×1km @4:35–4:44 (2min rest) → 2km CD + 3 strides." },
+      { day: "Wed", type: "spin", ref: "recovery", icon: "🚴" },
+      { day: "Thu", type: "run", label: "Easy 8km", icon: "🌿", pace: "6:00–6:20/km", km: 8 },
+      { day: "Fri", type: "rest", label: "Rest", icon: "😴" },
+      { day: "Sat", type: "run", label: "Easy 10km", icon: "🌿", pace: "6:00–6:15/km", km: 10 },
+      { day: "Sun", type: "run", label: "Easy 6km", icon: "🌿", pace: "6:15–6:30/km", km: 6 },
+    ]},
+  { week: 19, dates: "Oct 12–18", km: 14, type: "race", keyFocus: "1:40 is YOURS — go get it",
+    days: [
+      { day: "Mon", type: "run", label: "Easy 4km", icon: "🌿", pace: "6:15–6:30/km", km: 4 },
+      { day: "Tue", type: "run", label: "Easy 4km + Strides", icon: "🌿", pace: "6:15 / strides @4:15", km: 4, detail: "4km + 3×15s strides. Feel sharp, not tired." },
+      { day: "Wed", type: "rest", label: "Rest + Race Prep", icon: "😴" },
+      { day: "Thu", type: "rest", label: "Rest + Carb Load", icon: "😴" },
+      { day: "Fri", type: "run", label: "Shakeout 4km", icon: "🌿", pace: "6:15–6:30/km", km: 4 },
+      { day: "Sat", type: "rest", label: "REST / Travel", icon: "😴" },
+      { day: "Sun", type: "run", label: "🏆 RACE DAY — Sub 1:40 HM", icon: "🏆", pace: "4:44/km — negative split!", km: 21, detail: "First 5km: 4:48–4:52/km, feel easy. Middle 11km: lock in @4:44/km. Last 5km: give everything. TRUST IT." },
+    ]},
+];
+
+const typeColors = {
+  base:     { bg: "#0f1a0f", border: "#1e3d1e", badge: "#3d8b3d", label: "Base" },
+  build:    { bg: "#0f141f", border: "#1e3050", badge: "#3d7ab5", label: "Build" },
+  peak:     { bg: "#1a0f0f", border: "#4a1818", badge: "#c44444", label: "Peak" },
+  recovery: { bg: "#0f0f1a", border: "#28235a", badge: "#7a6ab5", label: "Recovery" },
+  taper:    { bg: "#1a1a0a", border: "#4a4018", badge: "#b5a030", label: "Taper" },
+  race:     { bg: "#1a0800", border: "#FF6B35", badge: "#FF6B35", label: "RACE" },
+};
+
+const dayTypeStyle = {
+  run:          { color: "#6ec96e", bg: "#6ec96e18", label: "RUN" },
+  "run+strength": { color: "#f0a030", bg: "#f0a03018", label: "RUN+GYM" },
+  strength:     { color: "#c44", bg: "#c4441418", label: "GYM" },
+  spin:         { color: "#00D4FF", bg: "#00D4FF18", label: "SPIN" },
+  rest:         { color: "#444", bg: "#44444418", label: "REST" },
+};
+
+function StrengthDetail({ sKey, note }) {
+  const s = STRENGTH[sKey];
+  if (!s) return null;
+  return (
+    <div style={{ marginTop: 10, padding: "12px 14px", background: "#c4441410", border: "1px solid #c4441430", borderRadius: 8 }}>
+      <div style={{ fontSize: "0.72rem", color: "#c44", fontWeight: 700, marginBottom: 2 }}>{s.label}</div>
+      <div style={{ fontSize: "0.68rem", color: "#888", marginBottom: 8 }}>{s.duration} · {s.focus}</div>
+      {note && <div style={{ fontSize: "0.68rem", color: "#f0a030", marginBottom: 8 }}>⚠️ {note}</div>}
+      {s.exercises.map((ex, i) => (
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, gap: 8 }}>
+          <div style={{ fontSize: "0.73rem", color: "#ddd" }}>{ex.name}</div>
+          <div style={{ fontSize: "0.68rem", color: "#888", textAlign: "right", minWidth: 80 }}>{ex.sets}</div>
+        </div>
+      ))}
+      {s.exercises.map((ex, i) => ex.note ? (
+        <div key={`n${i}`} style={{ fontSize: "0.65rem", color: "#666", marginBottom: 2, paddingLeft: 4 }}>· {ex.name}: {ex.note}</div>
+      ) : null)}
+    </div>
+  );
+}
+
+function SpinDetail({ sKey }) {
+  const s = SPIN[sKey];
+  if (!s) return null;
+  return (
+    <div style={{ marginTop: 10, padding: "12px 14px", background: "#00D4FF10", border: "1px solid #00D4FF30", borderRadius: 8 }}>
+      <div style={{ fontSize: "0.72rem", color: "#00D4FF", fontWeight: 700, marginBottom: 2 }}>{s.label}</div>
+      <div style={{ fontSize: "0.68rem", color: "#888", marginBottom: 6 }}>{s.duration} · {s.intensity}</div>
+      <div style={{ fontSize: "0.7rem", color: "#aaa", marginBottom: 8 }}>{s.detail}</div>
+      {s.structure.map((seg, i) => (
+        <div key={i} style={{ display: "flex", gap: 10, marginBottom: 4 }}>
+          <div style={{ fontSize: "0.67rem", color: "#00D4FF", minWidth: 70 }}>{seg.segment}</div>
+          <div style={{ fontSize: "0.68rem", color: "#bbb" }}>{seg.desc}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DayRow({ d, accent }) {
+  const [open, setOpen] = useState(false);
+  const ds = dayTypeStyle[d.type] || dayTypeStyle.rest;
+  const hasDetail = d.detail || d.ref || d.strengthRef;
+  return (
+    <div onClick={() => hasDetail && setOpen(!open)}
+      style={{ background: open ? ds.bg : "transparent", border: `1px solid ${open ? ds.color + "40" : "#1e1e1e"}`, borderRadius: 6, padding: "8px 10px", marginBottom: 4, cursor: hasDetail ? "pointer" : "default", transition: "all 0.15s" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ fontSize: "0.62rem", color: "#444", minWidth: 28, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}>{d.day}</div>
+        <div style={{ fontSize: "0.75rem" }}>{d.icon}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: "0.75rem", color: d.type === "rest" ? "#555" : "#ddd", fontWeight: 500 }}>
+            {d.label || (d.ref && SPIN[d.ref]?.label) || (d.ref && STRENGTH[d.ref]?.label)}
+            {d.strengthRef && <span style={{ color: "#c44", marginLeft: 6, fontSize: "0.65rem" }}>+ {STRENGTH[d.strengthRef]?.label.split(" — ")[0]}</span>}
+          </div>
+          {d.pace && <div style={{ fontSize: "0.67rem", color: accent, marginTop: 1, fontFamily: "'Bebas Neue', monospace", letterSpacing: "0.05em" }}>⏱ {d.pace}</div>}
+          {d.km && <div style={{ fontSize: "0.62rem", color: "#555", marginTop: 1 }}>{d.km} km</div>}
+        </div>
+        <div style={{ fontSize: "0.62rem", fontWeight: 700, color: ds.color, background: ds.bg, border: `1px solid ${ds.color}30`, borderRadius: 3, padding: "1px 6px", letterSpacing: "0.08em" }}>{ds.label}</div>
+        {hasDetail && <div style={{ color: "#444", fontSize: "0.7rem", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>▼</div>}
+      </div>
+      {open && (
+        <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid #1e1e1e" }}>
+          {d.detail && <div style={{ fontSize: "0.73rem", color: "#aaa", marginBottom: 8, lineHeight: 1.5 }}>{d.detail}</div>}
+          {d.ref && SPIN[d.ref] && <SpinDetail sKey={d.ref} />}
+          {d.ref && STRENGTH[d.ref] && <StrengthDetail sKey={d.ref} note={d.note} />}
+          {d.strengthRef && <StrengthDetail sKey={d.strengthRef} note={d.note} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeekCard({ w, accent }) {
+  const [open, setOpen] = useState(false);
+  const t = typeColors[w.type];
+  const runDays = w.days.filter(d => d.type === "run" || d.type === "run+strength").length;
+  const gymDays = w.days.filter(d => d.type === "strength" || d.type === "run+strength").length;
+  const spinDays = w.days.filter(d => d.type === "spin").length;
+  return (
+    <div style={{ background: t.bg, border: `1px solid ${open ? accent : t.border}`, borderRadius: 10, marginBottom: 8, overflow: "hidden", transition: "border-color 0.2s" }}>
+      <div onClick={() => setOpen(!open)} style={{ padding: "12px 16px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.5rem", color: accent, minWidth: 48, lineHeight: 1 }}>W{w.week}</div>
+          <div>
+            <div style={{ fontSize: "0.73rem", color: "#ccc", fontWeight: 600 }}>{w.dates}</div>
+            <div style={{ fontSize: "0.67rem", color: "#666", marginTop: 2 }}>{w.keyFocus}</div>
+            <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+              {runDays > 0 && <span style={{ fontSize: "0.58rem", color: "#6ec96e", background: "#6ec96e15", border: "1px solid #6ec96e30", borderRadius: 3, padding: "1px 5px" }}>🏃 {runDays}x run</span>}
+              {gymDays > 0 && <span style={{ fontSize: "0.58rem", color: "#c44", background: "#c4441415", border: "1px solid #c4441430", borderRadius: 3, padding: "1px 5px" }}>🏋️ {gymDays}x gym</span>}
+              {spinDays > 0 && <span style={{ fontSize: "0.58rem", color: "#00D4FF", background: "#00D4FF15", border: "1px solid #00D4FF30", borderRadius: 3, padding: "1px 5px" }}>🚴 {spinDays}x spin</span>}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ background: t.badge + "22", border: `1px solid ${t.badge}44`, borderRadius: 4, padding: "2px 8px", fontSize: "0.62rem", color: t.badge, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>{t.label}</div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.2rem", color: "#fff", minWidth: 55, textAlign: "right" }}>{w.km} km</div>
+          <div style={{ color: "#444", fontSize: "0.7rem", transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0)" }}>▼</div>
+        </div>
+      </div>
+      {open && (
+        <div style={{ padding: "0 12px 12px" }}>
+          {w.days.map((d, i) => <DayRow key={i} d={d} accent={accent} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Countdown({ targetDate, color }) {
+  const [days, setDays] = useState(0);
+  useEffect(() => {
+    const update = () => setDays(Math.max(0, Math.ceil((targetDate - new Date()) / 86400000)));
+    update();
+    const t = setInterval(update, 60000);
+    return () => clearInterval(t);
+  }, [targetDate]);
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: "2.5rem", fontWeight: 900, color, fontFamily: "'Bebas Neue', sans-serif", lineHeight: 1 }}>{days}</div>
+      <div style={{ fontSize: "0.58rem", color: "#666", letterSpacing: "0.15em", textTransform: "uppercase" }}>days</div>
+    </div>
+  );
+}
+
+const RACES = [
+  { name: "50K Trail Ultra", date: new Date("2026-06-06"), color: "#FF6B35", emoji: "⛰️", sub: "June 6, 2026" },
+  { name: "Sub 1:40 Half", date: new Date("2026-10-18"), color: "#00D4FF", emoji: "⚡", sub: "Oct 18, 2026" },
+];
+
+export default function App() {
+  const [phase, setPhase] = useState(0);
+  const [activeTab, setActiveTab] = useState("plan");
+  const weeks = phase === 0 ? ultraWeeks : hmWeeks;
+  const accent = phase === 0 ? "#FF6B35" : "#00D4FF";
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap";
+    document.head.appendChild(link);
+  }, []);
+
+  const totalKm = weeks.reduce((a, w) => a + w.km, 0);
+  const peakKm = Math.max(...weeks.map(w => w.km));
+
+  return (
+    <div style={{ background: "#0a0a0a", minHeight: "100vh", fontFamily: "'DM Sans', sans-serif", color: "#fff" }}>
+      {/* HEADER */}
+      <div style={{ background: "#0d0d0d", borderBottom: "1px solid #1a1a1a", padding: "20px 20px 0" }}>
+        <div style={{ maxWidth: 780, margin: "0 auto" }}>
+          <div style={{ fontSize: "0.58rem", color: "#444", letterSpacing: "0.25em", textTransform: "uppercase", marginBottom: 3 }}>Dual-Goal Training Plan</div>
+          <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "2rem", letterSpacing: "0.05em", lineHeight: 1, marginBottom: 16 }}>
+            <span style={{ color: "#FF6B35" }}>ULTRA</span> <span style={{ color: "#333" }}>→</span> <span style={{ color: "#00D4FF" }}>SPEED</span>
+          </div>
+
+          {/* Race cards */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+            {RACES.map((r, i) => (
+              <div key={i} onClick={() => { setPhase(i); setActiveTab("plan"); }} style={{ background: phase === i ? r.color + "12" : "#111", border: `1.5px solid ${phase === i ? r.color : "#1e1e1e"}`, borderRadius: 10, padding: "12px 14px", cursor: "pointer", transition: "all 0.2s" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontSize: "0.58rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.12em" }}>Phase {i + 1} · {i === 0 ? "12 wks" : "19 wks"}</div>
+                    <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.15rem", color: r.color, marginTop: 2 }}>{r.emoji} {r.name}</div>
+                    <div style={{ fontSize: "0.65rem", color: "#666", marginTop: 2 }}>{r.sub}</div>
+                  </div>
+                  <Countdown targetDate={r.date} color={r.color} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #1a1a1a" }}>
+            {[
+              { key: "plan", label: `${phase === 0 ? "⛰️ Ultra" : "⚡ Half"} — Week Plan` },
+              { key: "strength", label: "🏋️ Strength Library" },
+              { key: "spin", label: "🚴 Spin Library" },
+            ].map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{ background: "transparent", border: "none", borderBottom: `2px solid ${activeTab === tab.key ? accent : "transparent"}`, color: activeTab === tab.key ? "#fff" : "#555", padding: "8px 14px", cursor: "pointer", fontSize: "0.72rem", fontWeight: 600, fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.04em", marginBottom: -1, transition: "all 0.2s" }}>{tab.label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 780, margin: "0 auto", padding: "18px 20px" }}>
+
+        {/* ── PLAN TAB ── */}
+        {activeTab === "plan" && (
+          <>
+            {/* Stats row */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 16 }}>
+              {[
+                { label: "Total Volume", val: `${totalKm} km` },
+                { label: "Weeks", val: `${weeks.length}` },
+                { label: "Peak Week", val: `${peakKm} km` },
+                { label: phase === 0 ? "Race Dist." : "Target Pace", val: phase === 0 ? "50K" : "4:44/km" },
+              ].map((s, i) => (
+                <div key={i} style={{ background: "#111", border: "1px solid #1e1e1e", borderRadius: 8, padding: "10px 12px" }}>
+                  <div style={{ fontSize: "0.58rem", color: "#555", textTransform: "uppercase", letterSpacing: "0.12em" }}>{s.label}</div>
+                  <div style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "1.5rem", color: accent, lineHeight: 1.1 }}>{s.val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Volume sparkline */}
+            <div style={{ background: "#111", border: "1px solid #1a1a1a", borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
+              <div style={{ fontSize: "0.6rem", color: "#444", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>Weekly volume</div>
+              <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 40 }}>
+                {weeks.map((w, i) => {
+                  const h = Math.max(3, (w.km / peakKm) * 37);
+                  const tc = typeColors[w.type];
+                  return <div key={i} style={{ flex: 1, height: h, background: w.type === "race" ? accent : tc.badge + "aa", borderRadius: 2 }} title={`W${w.week}: ${w.km}km`} />;
+                })}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+                <span style={{ fontSize: "0.58rem", color: "#333" }}>W1</span>
+                <span style={{ fontSize: "0.58rem", color: "#333" }}>W{weeks.length}</span>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+              {Object.entries(typeColors).map(([k, v]) => (
+                <div key={k} style={{ fontSize: "0.6rem", color: v.badge, background: v.badge + "15", border: `1px solid ${v.badge}30`, borderRadius: 3, padding: "2px 7px", fontWeight: 700, letterSpacing: "0.08em" }}>{v.label}</div>
+              ))}
+              <div style={{ fontSize: "0.6rem", color: "#555", padding: "2px 7px" }}>↓ Click any week or session to expand</div>
+            </div>
+
+            {weeks.map(w => <WeekCard key={w.week} w={w} accent={accent} />)}
+          </>
+        )}
+
+        {/* ── STRENGTH LIBRARY TAB ── */}
+        {activeTab === "strength" && (
+          <div>
+            <div style={{ fontSize: "0.68rem", color: "#666", marginBottom: 16, lineHeight: 1.6 }}>
+              Two mandatory strength sessions per week throughout both phases. <span style={{ color: accent }}>Lower Body</span> targets trail-specific unilateral power and injury prevention. <span style={{ color: "#c44" }}>Upper Body</span> builds running posture, arm drive efficiency, and core anti-rotation strength.
+            </div>
+            {Object.entries(STRENGTH).map(([key, s]) => {
+              const isLower = key.startsWith("lower");
+              const col = isLower ? accent : "#c44";
+              return (
+                <div key={key} style={{ background: "#111", border: `1px solid ${col}30`, borderRadius: 10, padding: "16px", marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontSize: "0.6rem", color: col, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>{isLower ? "🦵 Lower Body" : "💪 Upper Body"} · {key.endsWith("A") ? "Workout A" : "Workout B"}</div>
+                      <div style={{ fontSize: "0.9rem", color: "#ddd", fontWeight: 600 }}>{s.label}</div>
+                      <div style={{ fontSize: "0.67rem", color: "#777", marginTop: 3 }}>{s.duration} · {s.focus}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {s.exercises.map((ex, i) => (
+                      <div key={i} style={{ background: col + "08", border: `1px solid ${col}18`, borderRadius: 6, padding: "8px 10px" }}>
+                        <div style={{ fontSize: "0.75rem", color: "#ddd", fontWeight: 600 }}>{ex.name}</div>
+                        <div style={{ fontSize: "0.67rem", color: col, marginTop: 2 }}>{ex.sets}</div>
+                        <div style={{ fontSize: "0.63rem", color: "#666", marginTop: 3, lineHeight: 1.4, fontStyle: "italic" }}>{ex.note}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── SPIN LIBRARY TAB ── */}
+        {activeTab === "spin" && (
+          <div>
+            <div style={{ fontSize: "0.68rem", color: "#666", marginBottom: 16, lineHeight: 1.6 }}>
+              Spin bike sessions replace easy runs when legs are heavy, add aerobic volume without impact, and are perfect for active recovery. One spin session per week is scheduled — swap with easy runs freely. <span style={{ color: "#00D4FF" }}>Never spin hard the day before a long run.</span>
+            </div>
+            {Object.entries(SPIN).map(([key, s]) => (
+              <div key={key} style={{ background: "#111", border: `1px solid ${s.color}30`, borderRadius: 10, padding: "16px", marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <div>
+                    <div style={{ fontSize: "0.6rem", color: s.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 3 }}>🚴 Spin · {s.duration}</div>
+                    <div style={{ fontSize: "0.9rem", color: "#ddd", fontWeight: 600 }}>{s.label}</div>
+                    <div style={{ fontSize: "0.67rem", color: "#777", marginTop: 2 }}>{s.intensity}</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "#999", marginBottom: 12, lineHeight: 1.5 }}>{s.detail}</div>
+                <div style={{ display: "flex", gap: 0, flexDirection: "column" }}>
+                  {s.structure.map((seg, i) => (
+                    <div key={i} style={{ display: "flex", gap: 12, padding: "7px 0", borderBottom: i < s.structure.length - 1 ? "1px solid #1a1a1a" : "none", alignItems: "flex-start" }}>
+                      <div style={{ fontSize: "0.67rem", color: s.color, minWidth: 72, fontWeight: 700, fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.05em", paddingTop: 1 }}>{seg.segment}</div>
+                      <div style={{ fontSize: "0.72rem", color: "#bbb", lineHeight: 1.4 }}>{seg.desc}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
